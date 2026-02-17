@@ -1,0 +1,155 @@
+Problem: I set goals every year… but I forget them or stop tracking progress.
+
+Solution: Rsolution tracker App
+
+What it solves?
+	I can write and save my goals in this app and can track my progress.
+
+
+schema:
+	.title
+	.discription
+	.goal (300 hours of reading reading)
+	.dailyTarget (5 mintues of reading)
+	.progress
+	.createdAt
+	.status (In progress, completed)
+	.type (resolution, daliy task)
+	.category (Health, job, education, savings)
+	.activityLog (all achived and non achived task)
+	.reminder
+
+
+GET REQUEST ( / , /:id ):
+
+	-> Receive GET Request
+	-> Check if is user logged in
+	-> If it is logged in:
+		-> If URL contains ID
+			-> call postById()
+		-> If URL only contains root path /
+			-> call allResolution()
+	-> If user does not logged in
+		-> send response 401, "Please login to your account"
+
+POST REQUEST ( /create , /login , /signup ):
+
+	-> receive POST request
+		-> Check if is user logged in
+	-> If it is logged in:
+		-> If URL contains "/create":
+			-> call create(req,res)
+		-> If URL contains "/login":
+			-> call login(req,res)
+		-> If URL contains "/signup":
+			-> call signUp(req,res)
+	-> If user does not logged in
+		-> send response 401, "Please login to your account"
+ 
+
+PUT REQUEST ( /update/:id ) :
+
+	-> receive PUT request
+	-> Check if is the user logged in
+	-> If it is logged in:
+		-> call update(req,res)
+	-> If user does not logged in
+		-> send response 401, "Please login to your account"
+
+
+DELETE REQUEST ( /delete/:id ):
+
+	-> receive DELETE request
+	-> Check if is the user logged in
+	-> If it is logged in:
+		-> call remove(req,res)
+	-> If user does not logged in
+		-> send response 401, "Please login to your account"
+
+
+
+
+allResolutionFUnction():
+	-> Extract all Resolution (data) from database.
+	-> Parse the data.
+	-> return the parse data.
+
+postById (Id):
+	-> Find item by ID in database.
+	-> If item exist:
+		-> Extract ID from URL
+			-> Find item by ID
+			-> If item exist
+				-> Send response 200, and return an item.
+	-> If item does not exist
+		-> Send response 404, "No item found!"
+
+
+update (Id):
+	-> Find item by ID in database.
+	-> If item exist:
+		-> Take user new data update it with old data
+		-> update that post into the database.
+		-> Send response 200, "Resulation updated".
+	-> If item does not exist
+		-> Send response 404, "No item found!"
+ 	
+
+
+remove (Id):
+	-> Find item by ID in database.
+	-> If item exist:
+		-> Delete item from database
+		-> Send response 200, "Deleted".
+	-> If item does not exist
+		-> Send response 404, "No item found!"
+
+
+
+complete (Id): 
+	-> Find item by ID in database:
+	-> If item exist:
+		-> Update "status" "In Progress" to "Completed"
+		-> Update that item into database
+		-> Send response "200", "Congratulation you achevied you goal"
+	-> If item does not exist
+		-> Send response 404, "No item found!"
+
+
+login (req):
+	-> take user usernanme and password
+	-> Find user by username
+	-> If user exist:
+		-> Extract Hash and salt from user database.
+		-> Convert user password into hash
+		-> call comparePassword()
+		-> If user password matches:
+			-> call sessionToken()
+		-> If password does not matches:
+			send response 401, "invalid passowrd or username"
+
+
+
+
+sessionToken():
+	-> Generate a session token.
+	-> save the token in the users database
+	-> Set cookie in the "Set-cookie" header
+	-> Set the cookie expiration time "Max-age"
+	-> Set the httOnly flag.
+	-> Send success response.
+	-> return header string and generated-token
+
+signup(req):
+	-> Take username and password
+	-> Check user by username in database:
+	-> If user already exist with the same username:
+		-> send response 409, "This username is already registerd!"
+	-> If user does not exist:
+		-> Convert password into hash and salt
+		-> call sessionToken
+		-> Update the user database with new user
+		-> Response 200, "Welcome , username"
+		
+		
+			

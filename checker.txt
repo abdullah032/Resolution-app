@@ -1,0 +1,675 @@
+Project structure:
+database
+	connectDB.js
+	goals.js
+	goalShema.js
+	users.js
+	userSchema.js
+
+src
+	controller
+		delete.js
+		get.js
+		patch.js
+		post.js
+
+	modal > goal-modal
+		delete.js
+		post.js
+		get.js
+		patch.js
+
+	modal > user-modal
+		delete.js
+		post.js
+		get.js
+		patch.js
+
+
+	pages:
+		index.html
+
+	service
+		post-service
+			allGoal.js
+			createGoal.js
+			deleteGoal.js
+			getPostById.js
+			update.js
+
+		user-service
+			allUsers.js
+			deleteUser.js
+			login.js
+			signup.js
+			update.js
+			userById.js
+
+		utils
+			authentication.js
+			bodyparser.js
+			generatehashAndSalt.js
+			response.js
+			sessionToken.js
+			urlSplitter.js
+			verifyPassword.js
+
+	app.js
+
+
+
+
+------------------------connectDB.js------------
+import mongoose from "mongoose";
+
+export default async function connectDB() {
+  try {
+    await mongoose.connect("mongodb://127.0.0.1:27017/resolution-tracker");
+    console.log("Connected to database");
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+
+
+----------------------goal.js----------------
+import mongoose from "mongoose";
+import resolutionSchema from "./goalSchema.js";
+const Goals = mongoose.model("goals", resolutionSchema);
+
+export default Goals;
+
+
+-------------------goalSchema.js------------
+import mongoose from "mongoose";
+
+const goalsSchema = new mongoose.Schema({
+  title: String,
+  description: String,
+  goal: Number,
+  dailyTarget: Number,
+  progress: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now() },
+  status: { type: String, default: "In-progress" },
+  type: String,
+  category: String,
+  uId: String,
+  activityLog: Array,
+  remindMe: { type: Boolean, default: false },
+});
+
+export default goalsSchema;
+
+
+----------------------------users.js----------------
+import mongoose from "mongoose";
+import userSchema from "./userSchema.js";
+
+const Users = mongoose.model("users", userSchema);
+
+export default Users;
+
+
+-------------------------------------------userSchema.js------------
+import mongoose from "mongoose";
+
+const userSchema = new mongoose.Schema({
+  username: String,
+  name: String,
+  hash: String,
+  salt: String,
+  role: String,
+  createdAt: { type: Date, default: Date.now() },
+  token: String,
+});
+
+export default userSchema;
+
+
+-------------------controller > delete.js---------------
+import urlSplitter from "../utils/urlSplitter.js";
+import DeleteGoal from "../model/goal-model/delete.js";
+import response from "../utils/response.js";
+import DeleteUser from "../model/user-model/delete.js";
+export default async function handleDeleteReq(req, res) {
+  const { root } = urlSplitter(req.url);
+
+  try {
+    // check is url contains /user
+    if (root === "users") {
+      const resData = await DeleteUser(req, res);
+      response(res, resData);
+    }
+    // Check is URL contains /goals
+    else if (root === "goals") {
+      const resData = await DeleteGoal(req, res);
+      response(res, resData);
+    }
+  } catch (error) {
+    response(res, error);
+  }
+}
+
+
+-----------------controler > get.js-------------------
+import urlSplitter from "../utils/urlSplitter.js";
+import GetGoal from "../model/goal-model/get.js";
+import response from "../utils/response.js";
+import GetUser from "../model/user-model/get.js";
+import fs from "fs/promises";
+import path from "path";
+export default async function handleGetReq(req, res) {
+  const { root } = urlSplitter(req.url);
+  try {
+    const url = req.url;
+    if (url === "/") {
+      const filePath = path.join(
+        import.meta.dirname,
+        "..",
+        "pages",
+        "index.html"
+      );
+
+      const html = await fs.readFile(filePath);
+      res.writeHead(200, { "Content-type": "text/html" });
+      res.end(html);
+    }
+    // check is url contains /user
+    else if (root === "users") {
+      const resData = await GetUser(req, res);
+      response(res, resData);
+    }
+    // Check is URL contains /goals
+    else if (root === "goals") {
+      const resData = await GetGoal(req, res);
+      response(res, resData);
+    }
+  } catch (error) {
+    console.log(error);
+    response(res, error);
+  }
+}
+
+
+--------------------------controller > patch.js-----------------
+import urlSplitter from "../utils/urlSplitter.js";
+import PatchGoal from "../model/goal-model/patch.js";
+import response from "../utils/response.js";
+import PatchUser from "../model/user-model/patch.js";
+export default async function handlePatchReq(req, res) {
+  const { root } = urlSplitter(req.url);
+
+  try {
+    // check is url contains /user
+    if (root === "users") {
+      const resData = await PatchUser(req, res);
+      response(res, resData);
+    }
+    // Check is URL contains /goals
+    else if (root === "goals") {
+      const resData = await PatchGoal(req, res);
+      response(res, resData);
+    }
+  } catch (error) {
+    response(res, error);
+  }
+}
+
+
+-----------------------controller > post.js-------------------
+import urlSplitter from "../utils/urlSplitter.js";
+import PostGoal from "../model/goal-model/post.js";
+import response from "../utils/response.js";
+import PostUser from "../model/user-model/post.js";
+export default async function handlePostReq(req, res) {
+  const { root } = urlSplitter(req.url);
+
+  try {
+    // check is url contains /user
+    if (root === "users") {
+      const resData = await PostUser(req, res);
+      response(res, resData);
+    }
+    // Check is URL contains /goals
+    else if (root === "goals") {
+      const resData = await PostGoal(req, res);
+      console.log(resData);
+      response(res, resData);
+    }
+  } catch (error) {
+    response(res, error);
+  }
+}
+
+
+
+
+------------------------- modal > goal-modal > delete.js----------------
+import authentication from "../../utils/authentication.js";
+import deleteGoal from "../../service/post-service/deleteGoal.js";
+import getPostById from "../../service/post-service/getPostById.js";
+export default async function DELETE(req, res) {
+  try {
+    // Split URL by "/" and convert it into an array
+    const urlParts = req.url.split("/");
+
+    // Get Id
+    const gId = urlParts[2];
+
+    // -> Check if is the user logged in
+    const { _id } = await authentication(req);
+
+    // Reject action if it is not post owner
+    const post = await getPostById(gId);
+    console.log(_id);
+    if (String(_id) !== post.uId) {
+      throw {
+        status: 404,
+        data: { msg: "No post found!" },
+        headers: {
+          "Content-type": "application/json",
+        },
+      };
+    }
+
+    // -> If it is logged in then call remove(ID)
+    const remove = await deleteGoal(gId);
+    return {
+      status: 200,
+      data: remove,
+      headers: {
+        "Content-type": "application/json",
+      },
+    };
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+
+-------------------------- modal > user-modal > get.js -------------------------------
+import authentication from "../../utils/authentication.js";
+import allGoals from "../../service/post-service/allGoals.js";
+import getPostById from "../../service/post-service/getPostById.js";
+export default async function GET(req, res) {
+  const urlParts = req.url.split("/");
+  try {
+    // console.log(req.headers.cookie);
+    // -> Check if is user logged in
+
+    const { _id, username } = await authentication(req);
+    // -> If it is logged in then check If URL contains ID
+    if (urlParts[1] === "goals" && urlParts[2]) {
+      // -> call postById()
+
+      const goal = await getPostById(_id);
+      return {
+        status: 200,
+        data: goal,
+        headers: {
+          "Content-type": "application/json",
+        },
+      };
+    }
+
+    // -> If URL only contains root path /goals
+    else if (urlParts[1] === "goals") {
+      // -> call allGoals
+      const goals = await allGoals();
+
+      return {
+        status: 200,
+        data: goals,
+        headers: {
+          "Content-type": "application/json",
+        },
+      };
+    }
+  } catch (error) {
+    // -> If user does not logged in
+    if (error.status == 401) {
+      console.log(error);
+      throw error;
+    } else {
+      console.log(error);
+    }
+  }
+}
+
+
+---------------------------------------------- modal > goal-modal > patch.js ------------------
+import authentication from "../../utils/authentication.js";
+import urlSplitter from "../../utils/urlSplitter.js";
+import UpdateGoal from "../../service/post-service/update.js";
+import bodyParser from "../../utils/bodyParser.js";
+import getPostById from "../../service/post-service/getPostById.js";
+export default async function PATCH(req, res) {
+  try {
+    // -> receive PUT request
+    // -> Check if is the user logged in
+    const { _id } = await authentication(req);
+
+    //   Extract goal Id
+    const { root, urlId } = urlSplitter(req.url);
+
+    // Reject action if it is not Post owner
+    const post = await getPostById(urlId);
+    if (post.uId !== String(_id)) {
+      throw {
+        status: 404,
+        data: { msg: "No post found" },
+        headers: {
+          "Content-type": "application/json",
+        },
+      };
+    }
+
+    // Receive data from user and parse it
+    const data = await bodyParser(req);
+    // -> If it is logged in then call update(req,res)
+    const update = await UpdateGoal(urlId, data);
+    return {
+      status: 200,
+      data: update,
+      headers: {
+        "Content-type": "application/json",
+      },
+    };
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+
+
+--------------------------- modal > goal-modal post.js-----------------------------
+import authentication from "../../utils/authentication.js";
+import createGoal from "../../service/post-service/createGoal.js";
+import bodyParser from "../../utils/bodyParser.js";
+export default async function POST(req, res) {
+  try {
+    // -> receive POST request
+    // -> Check if is user logged in
+    const { _id } = await authentication(req);
+
+    //  Extract data from req object
+    const data = await bodyParser(req);
+
+    // -> call create
+    data.uId = _id;
+    const created = await createGoal(data);
+
+    return {
+      status: 200,
+      data: created,
+      headers: {
+        "Content-type": "application/json",
+      },
+    };
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+
+------------------------ modal > goal-modal post.js -----------------------
+import authentication from "../../utils/authentication.js";
+import createGoal from "../../service/post-service/createGoal.js";
+import bodyParser from "../../utils/bodyParser.js";
+export default async function POST(req, res) {
+  try {
+    // -> receive POST request
+    // -> Check if is user logged in
+    const { _id } = await authentication(req);
+
+    //  Extract data from req object
+    const data = await bodyParser(req);
+
+    // -> call create
+    data.uId = _id;
+    const created = await createGoal(data);
+
+    return {
+      status: 200,
+      data: created,
+      headers: {
+        "Content-type": "application/json",
+      },
+    };
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+
+
+------------------------------- modal > user-modal > delete.js------------------------------
+import deleteUser from "../../service/user-service/deleteUser.js";
+import urlSplitter from "../../utils/urlSplitter.js";
+import authentication from "../../utils/authentication.js";
+export default async function DELETE(req, res) {
+  try {
+    // If user is not admin
+    const { role } = await authentication(req);
+    if (role !== "admin")
+      throw {
+        status: 500,
+        data: { msg: "Internal Issue" },
+        headers: { "Content-type": "application/json" },
+      };
+    // Extract ID from URL
+    const { root, urlId } = urlSplitter(req.url);
+    const result = await deleteUser(urlId);
+    return {
+      status: 200,
+      data: { result },
+      header: {
+        "Content-type": "application/json",
+      },
+    };
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+
+------------------------------- modal > user-modal > get.js------------------------------
+import allUsers from "../../service/user-service/allUsers.js";
+import authentication from "../../utils/authentication.js";
+import urlSplitter from "../../utils/urlSplitter.js";
+import userById from "../../service/user-service/userById.js";
+export default async function GET(req, res) {
+  const { root, urlId } = urlSplitter(req.url);
+  // console.log(req.headers.cookie);
+  try {
+    // Check is user logged in
+    const { role, _id } = await authentication(req);
+
+    // If user is  admin or himself
+    if (role === "admin" || (urlId && urlId === _id && root === "users")) {
+      const result = await userById(uId);
+      return {
+        status: 200,
+        data: result,
+        headers: {
+          "Content-type": "application/json",
+        },
+      };
+    } else if (root === "users" && role === "admin") {
+      const result = await allUsers();
+      return {
+        status: 200,
+        data: result,
+        headers: { "Content-type": "application/json" },
+      };
+    } else {
+      throw {
+        status: 500,
+        data: { msg: "Internal Issue" },
+        headers: { "Content-type": "application/json" },
+      };
+    }
+  } catch (error) {
+    // console.log(error);
+    throw error;
+  }
+}
+
+------------------------------- modal > user-modal > patch.js------------------------------
+import authentication from "../../utils/authentication.js";
+import urlSplitter from "../../utils/urlSplitter.js";
+import bodyParser from "../../utils/bodyParser.js";
+import generateHashAndSalt from "../../utils/generateHashAndSalt.js";
+import update from "../../service/user-service/update.js";
+export default async function PATCH(req, res) {
+  try {
+    // If user is not admin
+    const { role, _id } = await authentication(req);
+    const { urlId } = urlSplitter(req.url);
+    if (urlId !== _id)
+      throw {
+        status: 500,
+        data: { msg: "Internal Issue" },
+        headers: { "Content-type": "application/json" },
+      };
+
+    //   stor result
+    let result = {
+      status: 200,
+      headers: { "Content-type": "application/json" },
+    };
+
+    // Check data has password property
+    const data = await bodyParser(req);
+    let keys = Object.keys(data);
+    if (keys.length === 1 && keys.hasOwnProperty("password")) {
+      const { hash, salt } = await generateHashAndSalt(password);
+      let response = await update(urlId, { hash, salt });
+      result.response = data;
+      return result;
+    }
+    // Check data has name property
+    else if (keys.length === 1 && keys.hasOwnProperty("name")) {
+      let response = await update(urlId, data);
+      result.data = response;
+      return result;
+    }
+
+    result.data = data;
+    return result;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+------------------------------- modal > user-modal > post.js------------------------------
+import urlSplitter from "../../utils/urlSplitter.js";
+import login from "../../service/user-service/login.js";
+import signup from "../../service/user-service/signup.js";
+export default async function POST(req, res) {
+  try {
+    const { root, urlId } = urlSplitter(req.url);
+    if (urlId === "login") {
+      let response = await login(req);
+      return response;
+    } else if (urlId === "signup") {
+      let response = await signup(req);
+      return response;
+    }
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+
+-------------------------pages > index.html --------------------------
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>Welcome to Resolution tracker App</h1>
+    <button id="login">Login</button>
+
+    <button id="create-goal">CreateGoal</button>
+
+    <button id="delete-goal">Delete Goal</button>
+    <button id="update-goal">Update Goal</button>
+  </body>
+  <script>
+    document.querySelector("#login").addEventListener("click", async (e) => {
+      console.log("buton");
+      const res = await fetch("http://localhost:8080/users/login", {
+        headers: { "Content-type": "application/json" },
+        method: "POST",
+        body: JSON.stringify({ username: "ab@gmail.com", password: "abc" }),
+      });
+
+      const result = await res.json();
+      console.log(result);
+    });
+
+    document
+      .querySelector("#create-goal")
+      .addEventListener("click", async (e) => {
+        const res = await fetch("http://localhost:8080/goals", {
+          headers: { "Content-type": "application/json" },
+          method: "POST",
+          body: JSON.stringify({ title: "test" }),
+        });
+
+        const result = await res.json();
+        console.log(result);
+      });
+
+    document
+      .querySelector("#delete-goal")
+      .addEventListener("click", async (e) => {
+        const res = await fetch(
+          "http://localhost:8080/goals/696bc441bf41d66108efc582",
+          {
+            method: "DELETE",
+          }
+        );
+
+        const result = await res.json();
+        console.log(result);
+      });
+
+    document
+      .querySelector("#update-goal")
+      .addEventListener("click", async (e) => {
+        const res = await fetch(
+          "http://localhost:8080/goals/696bc7c9fd3b030a5227fc29",
+          {
+            body: JSON.stringify({ status: "completed" }),
+            method: "PATCH",
+          }
+        );
+
+        const result = await res.json();
+        console.log(result);
+      });
+  </script>
+</html>
+
+
+---------------------------service > post-service > allGoals.js-----------------------
+
+---------------------------service > post-service > createGoals.js-----------------------
+
+---------------------------service > post-service > deleteGoal.js-----------------------
+
+
+---------------------------service > post-service > allGoals.js-----------------------
+
+---------------------------service > post-service > update.js-----------------------
