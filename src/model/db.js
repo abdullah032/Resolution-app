@@ -21,8 +21,8 @@ const db = (() => {
     collection[collName].deleteOne({ _id: id }, options);
 
   //   Update item by id in database
-  const updateById = (collName, id, data, options = {}) =>
-    collection[collName].findByIdAndUpdate(id, data, options);
+  const updateById = (collName, id, data) =>
+    collection[collName].findByIdAndUpdate(id, data);
 
   //   Add new item in database
   const create = (collName, data, options = {}) => {

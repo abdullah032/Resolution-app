@@ -19,30 +19,6 @@ export default async function signup(data) {
       throw httpErrors.conflict({ error: "This email is taken!" });
     }
 
-    //If password does not exist in request object
-    if (!password)
-      throw httpErrors.unprocessableEntity({
-        error: "Please type password",
-      });
-
-    //If Confirm password does not exist in request object
-    if (!confirmPassword)
-      throw httpErrors.unprocessableEntity({
-        error: "Please type confirm password",
-      });
-
-    // If password is shorter than 8 chars
-    if (password.length < 8 || confirmPassword.length < 8)
-      throw httpErrors.unprocessableEntity({
-        error: "Password should be at least 8 characters long!",
-      });
-
-    //if password and confirmPassword does not matches:
-    if (password !== confirmPassword)
-      throw httpErrors.unprocessableEntity({
-        error: "Password does not matches with confirm password!",
-      });
-
     //Convert password into hash and salt
     const { hash, salt } = await generateHashAndSalt(password);
 

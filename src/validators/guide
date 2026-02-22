@@ -1,0 +1,17 @@
+Request
+ ↓
+Validation (Zod)   ← NEW
+ ↓
+Controller
+ ↓
+Service
+ ↓
+Model / DB 
+
+Validation should happen before service logic.
+
+
+👉 Validators are NOT models
+👉 Validators are NOT services
+
+They only describe input rules.

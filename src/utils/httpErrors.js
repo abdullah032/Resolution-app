@@ -70,6 +70,16 @@ const httpErrors = (function () {
       headers: { "Content-type": contentType, ...headers },
     };
   };
+
+  const tooManyRequests = (data, headers = {}) => {
+    // It can be use for user already exit!
+    return {
+      status: 429,
+      response: data,
+      headers: { "Content-type": contentType, ...headers },
+    };
+  };
+
   return {
     notFound,
     internalError,
@@ -79,6 +89,7 @@ const httpErrors = (function () {
     forbidden,
     unprocessableEntity,
     conflict,
+    tooManyRequests,
   };
 })();
 

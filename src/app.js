@@ -11,7 +11,6 @@ import sendResponse from "./utils/sendResponse.js";
 import httpErrors from "./utils/httpErrors.js";
 import authentication from "./utils/authentication.js";
 import urlParts from "./utils/urlParts.js";
-import db from "./model/db.js";
 import applyCors from "./utils/applyCors.js";
 
 // Load env file
@@ -26,16 +25,11 @@ server.on("request", async (req, res) => {
     console.log("request");
 
     // Apply cors
-    applyCors();
+    applyCors(res);
 
     const publicRoutes = ["login", "signup"];
 
     const { resource } = urlParts(req.url);
-    //Is user authenticated
-    if (req.method !== "OPTIONS" && !publicRoutes.includes(resource)) {
-      const user = await authentication(req);
-      req.user = user;
-    }
 
     if (req.url === "/favicon.ico") {
       res.writeHead(204); // No Content
@@ -43,8 +37,15 @@ server.on("request", async (req, res) => {
     }
 
     if (req.method === "OPTIONS") {
+      console.log("options");
       res.writeHead(204);
       return res.end();
+    }
+
+    //Is user authenticated
+    if (req.method !== "OPTIONS" && !publicRoutes.includes(resource)) {
+      const user = await authentication(req);
+      req.user = user;
     }
 
     const method = req.method;
@@ -52,16 +53,14 @@ server.on("request", async (req, res) => {
     if (method === "GET") {
       await handleGetReq(req, res);
     } else if (method === "POST") {
-      const data = await bodyParser(req);
-      req.data = data;
       await handlePostReq(req, res);
     } else if (method === "PATCH") {
       const data = await bodyParser(req);
-      req.data = data;
+      req.body = data;
       await handlePatchReq(req, res);
     } else if (method === "DELETE") {
       const data = await bodyParser(req);
-      req.data = data;
+      req.body = data;
       await handleDeleteReq(req, res);
     } else {
       sendResponse(res, httpErrors.notFound({ error: 404 }));

@@ -3,34 +3,35 @@ import db from "../model/db.js";
 import sendResponse from "../utils/sendResponse.js";
 import httpResponse from "../utils/httpErrors.js";
 import logout from "../service/logout.js";
-
+import { createJWToken } from "../utils/Jwt.js";
 export default async function handleGetReq(req, res) {
   const { parameter, resource } = urlParts(req.url);
+  const user = {
+    name: req.user.name,
+    _id: req.user._id,
+    email: req.user.email,
+  };
+  const token = createJWToken(user);
 
   try {
     const url = req.url;
     // If url equal to "/"
     if (url === "/") {
-      if (req.user) {
-        const { name, _id, email } = req.user;
-        sendResponse(res, httpResponse.ok({ name, id: _id, email }));
-      } else {
-        sendResponse(res, httpResponse.unauthorized({ error: "Unauthorized" }));
-      }
+      sendResponse(res, httpResponse.ok({ user, token }));
     }
 
     // Check is URL contains /goals and parameter
     if (resource === "goals" && parameter) {
       const goal = await db.findById("goals", parameter);
       if (!goal) throw httpResponse.notFound({ msg: "Not found!" });
-      sendResponse(res, httpResponse.ok(goal));
+      sendResponse(res, httpResponse.ok({ goal, token }));
     }
 
     // Check is URL contains /goals
     if (resource === "goals") {
       const { _id: id } = req.user;
       const goals = await db.find("goals", { uId: id });
-      sendResponse(res, httpResponse.ok(goals));
+      sendResponse(res, httpResponse.ok({ goals, token }));
     }
 
     // If url contains logout
@@ -39,7 +40,7 @@ export default async function handleGetReq(req, res) {
       sendResponse(res, logoutRes);
     }
   } catch (error) {
-    console.log(error);
+    error.response.token = token;
     sendResponse(res, error);
   }
 }
